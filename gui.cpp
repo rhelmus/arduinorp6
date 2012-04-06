@@ -2,7 +2,7 @@
 
 LCDShield CGUI::lcd;
 
-CGUI::CGUI() : firstWidget(0), activeWidget(0)
+CGUI::CGUI() : firstWidget(0), activeWidget(0), lastSwState(0)
 {
 }
 
@@ -28,15 +28,23 @@ void CGUI::addWidget(CWidget *w)
 void CGUI::setActiveWidget(CWidget *w)
 {
     activeWidget = w;
+    lcd.clear(GRAY);
     w->markDirty();
 }
 
-void CGUI::run()
+void CGUI::run(uint8_t swstate)
 {
     if (activeWidget)
     {
-        // UNDONE: Check key press
+        if ((lastSwState & (1 << 0)) && !(swstate & (1 << 0)))
+            activeWidget->handleKeyRelease(1);
+        if ((lastSwState & (1 << 1)) && !(swstate & (1 << 1)))
+            activeWidget->handleKeyRelease(2);
+        if ((lastSwState & (1 << 2)) && !(swstate & (1 << 2)))
+            activeWidget->handleKeyRelease(3);
 
         activeWidget->draw();
     }
+
+    lastSwState = swstate;
 }

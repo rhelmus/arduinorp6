@@ -15,6 +15,10 @@ struct SMenuItem
 
 class CMenu: public CWidget
 {
+public:
+    typedef void (*TCallBack)(SMenuItem *);
+
+private:
     enum
     {
         ITEM_XPAD = 5,
@@ -23,6 +27,7 @@ class CMenu: public CWidget
     };
 
     SMenuItem *firstItem, *activeItem;
+    TCallBack callBack;
     uint8_t itemCount;
     uint8_t maxItemLength;
     
@@ -30,8 +35,11 @@ class CMenu: public CWidget
 
 public:
     CMenu(void);
+
+    virtual void handleKeyRelease(uint8_t key);
     
     void addItem(SMenuItem *item);
+    void setCallback(TCallBack cb) { callBack = cb; }
 };
 
 #endif

@@ -19,6 +19,7 @@ enum
 class CGUI
 {
     CWidget *firstWidget, *activeWidget;
+    uint8_t lastSwState;
 
 public:
     CGUI(void);
@@ -26,7 +27,7 @@ public:
     void init(void);
     void addWidget(CWidget *w);
     void setActiveWidget(CWidget *w);
-    void run(void);
+    void run(uint8_t swstate);
 
     static LCDShield lcd;
 };

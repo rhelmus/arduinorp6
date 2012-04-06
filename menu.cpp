@@ -29,9 +29,9 @@ void CMenu::reDraw()
         const uint8_t itx = startx + ((w - (FONT_WIDTH * strlen_P(item->text))) / 2);
 
         if (item == activeItem)
-            CGUI::lcd.setStr_P(item->text, itx, ity, YELLOW, BLUE);
+            CGUI::lcd.setStrSmall_P(item->text, itx, ity, YELLOW, BLUE);
         else
-            CGUI::lcd.setStr_P(item->text, itx, ity, YELLOW, RED);
+            CGUI::lcd.setStrSmall_P(item->text, itx, ity, YELLOW, RED);
 
         ity += ITEM_YSPACE;
 
@@ -39,6 +39,42 @@ void CMenu::reDraw()
             break;
 
         item = item->next;
+    }
+}
+
+void CMenu::handleKeyRelease(uint8_t key)
+{
+    Serial.print("key pressed: "); Serial.println(key);
+
+    if (key == 1) // Go up
+    {
+        if (activeItem == firstItem)
+        {
+            // Wrap to end
+            while (activeItem->next)
+                activeItem = activeItem->next;
+        }
+        else
+        {
+            SMenuItem *it = firstItem;
+            while (it->next && (it->next != activeItem))
+                it = it->next;
+            if (it)
+                activeItem = it;
+        }
+        markDirty();
+    }
+    else if (key == 2) // Go down
+    {
+        activeItem = activeItem->next;
+        if (!activeItem)
+            activeItem = firstItem;
+        markDirty();
+    }
+    else // Activate
+    {
+        if (callBack)
+            callBack(activeItem);
     }
 }
 
