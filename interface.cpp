@@ -5,7 +5,7 @@
 
 #include <Wire.h>
 
-SRobotData robotData;
+uint16_t robotData[DATA_END];
 CGUI GUI;
 
 CMainStatWidget mainStatWidget;
@@ -46,12 +46,15 @@ void TWIReceived(int bytes)
 
     const uint8_t cmd = Wire.read();
 
-    if (cmd == TWI_CMD_SETLSPEED)
-        robotData.lspeed = Wire.read();
-    else if (cmd == TWI_CMD_SETRSPEED)
-        robotData.rspeed = Wire.read();
-    else if (cmd == TWI_CMD_SETBATTERY)
-        robotData.battery = word(Wire.read(), Wire.read());
+    if (cmd == TWI_CMD_SETDATA)
+    {
+        const uint8_t type = Wire.read();
+
+        if (type == BATTERY)
+            robotData[type] = word(Wire.read(), Wire.read());
+        else
+            robotData[type] = Wire.read();
+    }
 
     if (Wire.available())
     {

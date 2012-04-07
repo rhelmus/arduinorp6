@@ -5,17 +5,16 @@
 
 enum
 {
-    TWI_CMD_SETLSPEED = 0,
-    TWI_CMD_SETRSPEED,
-    TWI_CMD_SETBATTERY
+    TWI_CMD_SETDATA = 0
 };
 
-struct SRobotData
+enum
 {
-    uint8_t lspeed, rspeed;
-    uint16_t battery;
+    BATTERY = 0,
+    MOTOR_LSPEED,
+    MOTOR_RSPEED,
 
-    SRobotData(void) : lspeed(0), rspeed(0), battery(0) { }
+    DATA_END
 };
 
 void initInterface(void);
