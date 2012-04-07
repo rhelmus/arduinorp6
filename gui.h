@@ -13,7 +13,10 @@ enum
     LCD_HEIGHT = 128,
 
     FONT_WIDTH = 8,
-    FONT_HEIGHT = 16
+    FONT_HEIGHT = 16,
+
+    FONT_SMALL_WIDTH = 6,
+    FONT_SMALL_HEIGHT = 8
 };
 
 class CGUI

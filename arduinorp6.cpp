@@ -6,67 +6,7 @@
 #include "gui.h"
 #include "interface.h"
 
-enum
-{
-    I2C_CMD_SETLSPEED = 0,
-    I2C_CMD_SETRSPEED,
-    I2C_CMD_SETBATTERY
-};
-
-struct SRobotData
-{
-    uint8_t lspeed, rspeed;
-    uint16_t battery;
-    
-    SRobotData(void) : lspeed(0), rspeed(0), battery(0) { }
-};
-
 const uint8_t sharpIRPin = 0;
-SRobotData robotData;
-CGUI GUI;
-
-void TWIMasterRequest(void)
-{
-    
-}
-
-void TWIReceived(int bytes)
-{
-    Serial.print("Received data from TWI master: ");
-    Serial.println(bytes);
-    
-    const uint8_t cmd = Wire.read();   
-    
-    if (cmd == I2C_CMD_SETLSPEED)
-        robotData.lspeed = Wire.read();
-    else if (cmd == I2C_CMD_SETRSPEED)
-        robotData.rspeed = Wire.read();
-    else if (cmd == I2C_CMD_SETBATTERY)
-        robotData.battery = word(Wire.read(), Wire.read());
-    
-    if (Wire.available())
-    {
-        Serial.print("Extra bytes left: ");
-        while (Wire.available())
-        {
-            Serial.print((char)Wire.read());
-            Serial.print(", ");
-        }
-        Serial.println();
-    }
-       
-#if 0
-    Serial.print("Data: ");
-    while (bytes)
-    {
-        Serial.print((char)Wire.read());
-        Serial.print(", ");
-        --bytes;
-    }
-    Serial.println("");
-#endif
-}
-
 
 uint8_t getSharpIRDistance()
 {
@@ -115,11 +55,6 @@ void drawLCDScreen(void)
 
 void setup()  
 {
-    Wire.begin(10 >> 1);
-    Wire.onRequest(TWIMasterRequest);
-    Wire.onReceive(TWIReceived);
-    
-    GUI.init();
     initInterface();
 
     Serial.begin(9600);
@@ -135,6 +70,5 @@ void loop()
     {
         updelay = curtime + 25;
         updateInterface();
-//        drawLCDScreen();
     }
 }

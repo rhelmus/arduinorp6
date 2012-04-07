@@ -31,12 +31,12 @@ private:
     uint8_t itemCount;
     uint8_t maxItemLength;
     
-    void reDraw();
+    void reDraw(void);
 
 public:
     CMenu(void);
 
-    virtual void handleKeyRelease(uint8_t key);
+    void handleKeyRelease(uint8_t key);
     
     void addItem(SMenuItem *item);
     void setCallback(TCallBack cb) { callBack = cb; }

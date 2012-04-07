@@ -1,8 +1,14 @@
 #include "gui.h"
 #include "interface.h"
+#include "mainstatwidget.h"
 #include "menu.h"
 
-extern CGUI GUI;
+#include <Wire.h>
+
+SRobotData robotData;
+CGUI GUI;
+
+CMainStatWidget mainStatWidget;
 
 #define MAKE_MENUITEM(v, s) \
     const char v##_txt[] PROGMEM = s; \
@@ -27,6 +33,48 @@ struct SButton
     uint32_t lastDebounceTime;
 } LCDShieldSwitches[3] = { { 3, HIGH, HIGH, 0 }, { 4, HIGH, HIGH, 0 }, { 5, HIGH, HIGH, 0 } };
 
+
+void TWIMasterRequest(void)
+{
+
+}
+
+void TWIReceived(int bytes)
+{
+    Serial.print("Received data from TWI master: ");
+    Serial.println(bytes);
+
+    const uint8_t cmd = Wire.read();
+
+    if (cmd == TWI_CMD_SETLSPEED)
+        robotData.lspeed = Wire.read();
+    else if (cmd == TWI_CMD_SETRSPEED)
+        robotData.rspeed = Wire.read();
+    else if (cmd == TWI_CMD_SETBATTERY)
+        robotData.battery = word(Wire.read(), Wire.read());
+
+    if (Wire.available())
+    {
+        Serial.print("Extra bytes left: ");
+        while (Wire.available())
+        {
+            Serial.print((char)Wire.read());
+            Serial.print(", ");
+        }
+        Serial.println();
+    }
+
+#if 0
+    Serial.print("Data: ");
+    while (bytes)
+    {
+        Serial.print((char)Wire.read());
+        Serial.print(", ");
+        --bytes;
+    }
+    Serial.println("");
+#endif
+}
 
 void menuCallBack(SMenuItem *item)
 {
@@ -53,9 +101,16 @@ void initInterface()
         digitalWrite(LCDShieldSwitches[i].pin, HIGH);
     }
 
+    Wire.begin(10 >> 1);
+    Wire.onRequest(TWIMasterRequest);
+    Wire.onReceive(TWIReceived);
+
+    GUI.init();
+    GUI.addWidget(&mainStatWidget);
     GUI.addWidget(&mainMenu);
     GUI.addWidget(&subMenu);
-    GUI.setActiveWidget(&mainMenu);
+//    GUI.setActiveWidget(&mainMenu);
+    GUI.setActiveWidget(&mainStatWidget);
 
     mainMenu.addItem(&firstItem);
     mainMenu.addItem(&secondItem);

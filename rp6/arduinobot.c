@@ -3,9 +3,9 @@
 
 enum
 {
-    I2C_CMD_SETLSPEED = 0,
-    I2C_CMD_SETRSPEED,
-    I2C_CMD_SETBATTERY,
+    TWI_CMD_SETLSPEED = 0,
+    TWI_CMD_SETRSPEED,
+    TWI_CMD_SETBATTERY,
 };
 
 const uint8_t I2CSlaveAddress = 10;
@@ -36,9 +36,9 @@ int main(void)
     {
         if (getStopwatch1() > 1000)
         {
-            I2CTWI_transmit2Bytes(I2CSlaveAddress, I2C_CMD_SETLSPEED, 10);
-            I2CTWI_transmit2Bytes(I2CSlaveAddress, I2C_CMD_SETRSPEED, 15);           
-            I2CTWI_transmit3Bytes(I2CSlaveAddress, I2C_CMD_SETBATTERY, (adcBat >> 8), adcBat);
+            I2CTWI_transmit2Bytes(I2CSlaveAddress, TWI_CMD_SETLSPEED, 10);
+            I2CTWI_transmit2Bytes(I2CSlaveAddress, TWI_CMD_SETRSPEED, 15);           
+            I2CTWI_transmit3Bytes(I2CSlaveAddress, TWI_CMD_SETBATTERY, (adcBat >> 8), adcBat);
             setStopwatch1(0);
         }
         task_I2CTWI();

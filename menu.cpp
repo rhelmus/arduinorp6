@@ -29,9 +29,9 @@ void CMenu::reDraw()
         const uint8_t itx = startx + ((w - (FONT_WIDTH * strlen_P(item->text))) / 2);
 
         if (item == activeItem)
-            CGUI::lcd.setStrSmall_P(item->text, itx, ity, YELLOW, BLUE);
+            CGUI::lcd.setStr_P(item->text, itx, ity, YELLOW, BLUE);
         else
-            CGUI::lcd.setStrSmall_P(item->text, itx, ity, YELLOW, RED);
+            CGUI::lcd.setStr_P(item->text, itx, ity, YELLOW, RED);
 
         ity += ITEM_YSPACE;
 
