@@ -40,7 +40,7 @@ TARGET = arduinobot
 # Specify relative path to RP6 library files here.
 # This is "../../RP6Lib" or "../RP6Lib" usually.
 
-RP6_LIB_PATH=../RP6Examples_20080510/RP6Lib
+RP6_LIB_PATH=../../../../rp6/RP6Examples_20080510/RP6Lib
 RP6_LIB_PATH_OTHERS= $(RP6_LIB_PATH)/RP6base $(RP6_LIB_PATH)/RP6common
 
 ###############################################################################

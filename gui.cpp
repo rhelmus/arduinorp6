@@ -9,7 +9,7 @@ CGUI::CGUI() : firstWidget(0), activeWidget(0), lastSwState(0)
 void CGUI::init()
 {
     lcd.init(PHILLIPS, LCDShield::NORTH);
-    lcd.clear(GRAY);
+    lcd.clear(SKYBLUE);
 }
 
 void CGUI::addWidget(CWidget *w)
@@ -28,7 +28,8 @@ void CGUI::addWidget(CWidget *w)
 void CGUI::setActiveWidget(CWidget *w)
 {
     activeWidget = w;
-    lcd.clear(GRAY);
+    lcd.clear(SKYBLUE);
+    w->onActivate();
     w->markDirty();
 }
 

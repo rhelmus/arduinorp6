@@ -16,12 +16,9 @@ CMainStatWidget mainStatWidget;
 
 
 CMenu mainMenu;
-MAKE_MENUITEM(firstItem, "First item");
+MAKE_MENUITEM(mainStatItem, "Status");
 MAKE_MENUITEM(secondItem, "Second item");
 MAKE_MENUITEM(thirdItem, "Third item");
-
-CMenu subMenu;
-MAKE_MENUITEM(subItem, "Sub item");
 
 
 #undef MAKE_MENUITEM
@@ -34,6 +31,16 @@ struct SButton
 } LCDShieldSwitches[3] = { { 3, HIGH, HIGH, 0 }, { 4, HIGH, HIGH, 0 }, { 5, HIGH, HIGH, 0 } };
 
 
+extern int __bss_end;
+extern void *__brkval;
+int memFree()
+{
+    int fv;
+    if ((int)__brkval == 0)
+        return ((int)&fv) - ((int)&__bss_end);
+    return ((int)&fv) - ((int)&__brkval);
+}
+
 void TWIMasterRequest(void)
 {
 
@@ -41,30 +48,30 @@ void TWIMasterRequest(void)
 
 void TWIReceived(int bytes)
 {
-    Serial.print("Received data from TWI master: ");
-    Serial.println(bytes);
-
     const uint8_t cmd = Wire.read();
 
     if (cmd == TWI_CMD_SETDATA)
     {
         const uint8_t type = Wire.read();
 
-        if (type == BATTERY)
-            robotData[type] = word(Wire.read(), Wire.read());
-        else
+        if ((type == MOTOR_LSPEED) || (type == MOTOR_RSPEED))
             robotData[type] = Wire.read();
+        else
+            robotData[type] = word(Wire.read(), Wire.read());
+
+        mainStatWidget.markDirty();
     }
 
     if (Wire.available())
     {
-        Serial.print("Extra bytes left: ");
-        while (Wire.available())
-        {
-            Serial.print((char)Wire.read());
-            Serial.print(", ");
-        }
-        Serial.println();
+        Wire.read();
+//        Serial.print(F("Extra bytes left: "));
+//        while (Wire.available())
+//        {
+//            Serial.print((char)Wire.read());
+//            Serial.print(", ");
+//        }
+//        Serial.println();
     }
 
 #if 0
@@ -90,10 +97,13 @@ void menuCallBack(SMenuItem *item)
 
     Serial.println("");
 
-    if (item == &subItem)
-        GUI.setActiveWidget(&mainMenu);
-    else
-        GUI.setActiveWidget(&subMenu);
+    if (item == &mainStatItem)
+        GUI.setActiveWidget(&mainStatWidget);
+}
+
+void widgetCloseCB(CWidget *w)
+{
+    GUI.setActiveWidget(&mainMenu);
 }
 
 void initInterface()
@@ -111,17 +121,14 @@ void initInterface()
     GUI.init();
     GUI.addWidget(&mainStatWidget);
     GUI.addWidget(&mainMenu);
-    GUI.addWidget(&subMenu);
-//    GUI.setActiveWidget(&mainMenu);
-    GUI.setActiveWidget(&mainStatWidget);
+    GUI.setActiveWidget(&mainMenu);
 
-    mainMenu.addItem(&firstItem);
+    mainMenu.addItem(&mainStatItem);
     mainMenu.addItem(&secondItem);
     mainMenu.addItem(&thirdItem);
     mainMenu.setCallback(menuCallBack);
 
-    subMenu.addItem(&subItem);
-    subMenu.setCallback(menuCallBack);
+    mainStatWidget.setClosedCB(widgetCloseCB);
 }
 
 void updateInterface()

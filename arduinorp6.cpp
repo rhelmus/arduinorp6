@@ -55,9 +55,8 @@ void drawLCDScreen(void)
 
 void setup()  
 {
-    initInterface();
-
     Serial.begin(9600);
+    initInterface();
     Serial.println("Arduino started!");
 }
 

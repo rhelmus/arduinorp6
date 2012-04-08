@@ -6,7 +6,9 @@
 
 class CMainStatWidget : public CWidget
 {
-    const char *dataLabels[DATA_END];
+    bool fullUpdate;
+
+    static const char *dataLabels[DATA_END];
 
     void reDraw(void);
 
@@ -14,6 +16,7 @@ public:
     CMainStatWidget(void);
 
     void handleKeyRelease(uint8_t key);
+    void onActivate(void) { fullUpdate = true; }
 };
 
 #endif // MAINSTATWIDGET_H

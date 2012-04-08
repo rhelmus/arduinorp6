@@ -8,70 +8,77 @@ namespace {
 
 uint16_t getDataMax(uint8_t type)
 {
-    if (type == BATTERY)
-        return 1023;
+    if ((type == MOTOR_LSPEED) || (type == MOTOR_RSPEED))
+        return 210;
     else
-        return 255;
+        return 1023;
 }
 
 }
 
-CMainStatWidget::CMainStatWidget()
+const char *CMainStatWidget::dataLabels[DATA_END];
+
+CMainStatWidget::CMainStatWidget() : fullUpdate(true)
 {
-    dataLabels[BATTERY] = PSTR("Bat");
+    dataLabels[BATTERY] = PSTR("Battery");
     dataLabels[MOTOR_LSPEED] = PSTR("L spd");
     dataLabels[MOTOR_RSPEED] = PSTR("R spd");
+    dataLabels[MOTOR_LCURRENT] = PSTR("L cur");
+    dataLabels[MOTOR_RCURRENT] = PSTR("R cur");
+    dataLabels[LIGHT_L] = PSTR("Light L");
+    dataLabels[LIGHT_R] = PSTR("Light R");
 }
 
 void CMainStatWidget::reDraw()
 {
     const uint8_t offset = 10;
-    const uint8_t startx = LCD_STARTX + offset, starty = LCD_STARTY + offset;
+    const uint8_t startx = LCD_STARTX + offset;
     const uint8_t endx = startx + LCD_WIDTH - (2 * offset);
-    const uint8_t endy = starty + LCD_HEIGHT - (2 * offset);
+    const uint8_t labelsx = startx + 5;
+    const uint8_t graphsx = labelsx + 45, graphex = endx - 5;
+    const uint8_t rowh = 10, rowspacing = 2;
+    const uint8_t labelyoffset = (rowh - FONT_SMALL_HEIGHT) / 2;
 
-    // Background
-    CGUI::lcd.setRect(startx, starty, endx, endy, true, WHITE);
+    const uint8_t totheight = DATA_END * (rowh + rowspacing);
+    const uint8_t starty = (LCD_HEIGHT - totheight) / 2;
 
-    // Border
-    CGUI::lcd.setRect(startx, starty, endx, endy, false, BLUE);
+    uint8_t y = starty + rowspacing;
 
-    const uint8_t vy = starty + 5;
-    const uint8_t ty = endy - 5 - FONT_SMALL_HEIGHT;
-    const uint8_t gsy = vy + FONT_SMALL_HEIGHT + 2, gw = 4 * FONT_SMALL_WIDTH;
-    const uint8_t gh = (ty - gsy - 5);
+    if (fullUpdate)
+    {
+        // Background
+        CGUI::lcd.setRect(startx, starty, endx, starty + totheight, true, BROWN);
 
-    uint8_t x = startx + 5;
+        // Border
+        CGUI::lcd.setRect(startx, starty, endx, starty + totheight, false, BLUE);
+    }
+    else
+    {
+        // Partially clear widget
+        CGUI::lcd.setRect(graphsx, y, graphex, y + (DATA_END*(rowh+rowspacing))-rowspacing,
+                          true, BROWN);
+    }
+
     for (uint8_t i=0; i<DATA_END; ++i)
     {
-        char strval[5];
+        CGUI::lcd.setStrSmall_P(dataLabels[i], labelsx, y + labelyoffset, YELLOW, BROWN);
+
+        CGUI::lcd.setRect(graphsx, y, map(robotData[i], 0, getDataMax(i), graphsx, graphex),
+                          y + rowh, true, BLUE);
+
+        char strval[5]; // Assume no more than 4 numbers!
         itoa(robotData[i], strval, 10);
-
-        const uint8_t tw = strlen_P(dataLabels[i]) * FONT_SMALL_WIDTH;
         const uint8_t vw = strlen(strval) * FONT_SMALL_WIDTH;
+        CGUI::lcd.setStrSmall(strval, graphsx + ((graphex - graphsx - vw) / 2),
+                              y + labelyoffset, RED, BROWN);
 
-        const uint8_t gy = gsy + (gh - map(robotData[i], 0, getDataMax(i), 0, gh));
-        if (tw > gw) // text width longer than graph width
-        {
-            CGUI::lcd.setStrSmall_P(dataLabels[i], x, ty, BLUE, WHITE);
-
-            const uint8_t gx = x + ((tw - gw) / 2);
-            CGUI::lcd.setRect(gx, gy, gx + gw, gsy + gh, true, GREEN);
-            CGUI::lcd.setStrSmall(strval, x + ((tw - vw) / 2), vy, RED, WHITE);
-
-            x += tw + 7;
-        }
-        else // text width shorter than graph width
-        {
-            CGUI::lcd.setStrSmall_P(dataLabels[i], x + (gw - tw), ty, BLUE, WHITE);
-            CGUI::lcd.setRect(x, gy, x + gw, gsy + gh, true, GREEN);
-            CGUI::lcd.setStrSmall(strval, x + ((gw - vw) / 2), vy, RED, WHITE);
-            x += gw + 7;
-        }
+        y += rowh + rowspacing;
     }
+
+    fullUpdate = false;
 }
 
 void CMainStatWidget::handleKeyRelease(uint8_t key)
 {
-
+    close();
 }

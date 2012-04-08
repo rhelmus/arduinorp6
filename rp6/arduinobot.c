@@ -1,12 +1,7 @@
+#include "../shared/shared.h"
+
 #include "RP6RobotBaseLib.h"
 #include "RP6I2CmasterTWI.h"
-
-enum
-{
-    TWI_CMD_SETLSPEED = 0,
-    TWI_CMD_SETRSPEED,
-    TWI_CMD_SETBATTERY,
-};
 
 const uint8_t I2CSlaveAddress = 10;
 
@@ -36,9 +31,24 @@ int main(void)
     {
         if (getStopwatch1() > 1000)
         {
-            I2CTWI_transmit2Bytes(I2CSlaveAddress, TWI_CMD_SETLSPEED, 10);
-            I2CTWI_transmit2Bytes(I2CSlaveAddress, TWI_CMD_SETRSPEED, 15);           
-            I2CTWI_transmit3Bytes(I2CSlaveAddress, TWI_CMD_SETBATTERY, (adcBat >> 8), adcBat);
+            I2CTWI_transmit4Bytes(I2CSlaveAddress, TWI_CMD_SETDATA, BATTERY,
+                                  (adcBat >> 8), adcBat);
+
+            I2CTWI_transmit3Bytes(I2CSlaveAddress, TWI_CMD_SETDATA, MOTOR_LSPEED,
+                                  getLeftSpeed());
+            I2CTWI_transmit3Bytes(I2CSlaveAddress, TWI_CMD_SETDATA, MOTOR_RSPEED,
+                                  getRightSpeed());
+
+            I2CTWI_transmit4Bytes(I2CSlaveAddress, TWI_CMD_SETDATA, MOTOR_LCURRENT,
+                                  (adcMotorCurrentLeft >> 8), adcMotorCurrentLeft);
+            I2CTWI_transmit4Bytes(I2CSlaveAddress, TWI_CMD_SETDATA, MOTOR_RCURRENT,
+                                  (adcMotorCurrentRight >> 8), adcMotorCurrentRight);
+
+            I2CTWI_transmit4Bytes(I2CSlaveAddress, TWI_CMD_SETDATA, LIGHT_L,
+                                  (adcLSL >> 8), adcLSL);
+            I2CTWI_transmit4Bytes(I2CSlaveAddress, TWI_CMD_SETDATA, LIGHT_R,
+                                  (adcLSR >> 8), adcLSR);
+
             setStopwatch1(0);
         }
         task_I2CTWI();
