@@ -18,7 +18,7 @@ private:
 protected:
     CWidget(void) : dirty(true), next(0), closedCB(0) { }
 
-    void close(void) { closedCB(this); }
+    void close(void) { if(closedCB) closedCB(this); }
 
 public:
     virtual void handleKeyRelease(uint8_t key) { }

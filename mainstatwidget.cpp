@@ -10,6 +10,10 @@ uint16_t getDataMax(uint8_t type)
 {
     if ((type == MOTOR_LSPEED) || (type == MOTOR_RSPEED))
         return 210;
+    else if (type == SHARP_IR)
+        return 150;
+    else if (type == SERVOPOS)
+        return 180;
     else
         return 1023;
 }
@@ -27,6 +31,8 @@ CMainStatWidget::CMainStatWidget() : fullUpdate(true)
     dataLabels[MOTOR_RCURRENT] = PSTR("R cur");
     dataLabels[LIGHT_L] = PSTR("Light L");
     dataLabels[LIGHT_R] = PSTR("Light R");
+    dataLabels[SHARP_IR] = PSTR("Shrp IR");
+    dataLabels[SERVOPOS] = PSTR("Servo");
 }
 
 void CMainStatWidget::reDraw()
@@ -36,7 +42,7 @@ void CMainStatWidget::reDraw()
     const uint8_t endx = startx + LCD_WIDTH - (2 * offset);
     const uint8_t labelsx = startx + 5;
     const uint8_t graphsx = labelsx + 45, graphex = endx - 5;
-    const uint8_t rowh = 10, rowspacing = 2;
+    const uint8_t rowh = 10, rowspacing = 1;
     const uint8_t labelyoffset = (rowh - FONT_SMALL_HEIGHT) / 2;
 
     const uint8_t totheight = DATA_END * (rowh + rowspacing);

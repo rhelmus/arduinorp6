@@ -1,3 +1,4 @@
+#include <Servo.h>
 #include <Wire.h>
 
 // Need to include this here in order to properly setup include paths...
@@ -5,23 +6,6 @@
 
 #include "gui.h"
 #include "interface.h"
-
-const uint8_t sharpIRPin = 0;
-
-uint8_t getSharpIRDistance()
-{
-    uint16_t adc = analogRead(sharpIRPin);
-    
-    // UNDONE: Avoid float calculations?
-    
-    // ADC to volt (assuming 5v supply))
-    float volt = (float)adc * 5.0 / 1023.0;
-    
-    // From http://www.robotshop.ca/PDF/Sharp_GP2Y0A02YK_Ranger.pdf
-    const float A = 0.008271, B = 939.6, C = -3.398, D = 17.339;
-    
-    return (uint8_t)((A + B * volt) / (1.0 + C * volt + D * volt * volt));
-}
 
 void drawLCDScreen(void)
 {

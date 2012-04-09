@@ -2,7 +2,8 @@
 
 LCDShield CGUI::lcd;
 
-CGUI::CGUI() : firstWidget(0), activeWidget(0), lastSwState(0)
+CGUI::CGUI() : firstWidget(0), activeWidget(0), lastSwState(0), lastStatsDraw(0),
+    drawStatsCB(0)
 {
 }
 
@@ -29,12 +30,24 @@ void CGUI::setActiveWidget(CWidget *w)
 {
     activeWidget = w;
     lcd.clear(SKYBLUE);
+    if (drawStatsCB)
+        drawStatsCB();
     w->onActivate();
     w->markDirty();
 }
 
 void CGUI::run(uint8_t swstate)
 {
+    if (drawStatsCB)
+    {
+        const uint32_t curtime = millis();
+        if (curtime > lastStatsDraw)
+        {
+            drawStatsCB();
+            lastStatsDraw = curtime + 500;
+        }
+    }
+
     if (activeWidget)
     {
         if ((lastSwState & (1 << 0)) && !(swstate & (1 << 0)))

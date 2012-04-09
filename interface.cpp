@@ -1,14 +1,20 @@
 #include "gui.h"
 #include "interface.h"
+#include "logwidget.h"
 #include "mainstatwidget.h"
 #include "menu.h"
 
+#include <Servo.h>
 #include <Wire.h>
 
 uint16_t robotData[DATA_END];
 CGUI GUI;
+Servo servo;
+
+namespace {
 
 CMainStatWidget mainStatWidget;
+CLogWidget logWidget;
 
 #define MAKE_MENUITEM(v, s) \
     const char v##_txt[] PROGMEM = s; \
@@ -17,11 +23,15 @@ CMainStatWidget mainStatWidget;
 
 CMenu mainMenu;
 MAKE_MENUITEM(mainStatItem, "Status");
-MAKE_MENUITEM(secondItem, "Second item");
+MAKE_MENUITEM(logItem, "Log");
 MAKE_MENUITEM(thirdItem, "Third item");
 
 
 #undef MAKE_MENUITEM
+
+uint32_t connectedTime = 0, lastPing = 0, sharpIRUptime = 0;
+bool connected = false;
+EReqData requestedData = REQ_NONE;
 
 struct SButton
 {
@@ -43,7 +53,16 @@ int memFree()
 
 void TWIMasterRequest(void)
 {
-
+    if (requestedData == REQ_PING)
+    {
+        if (!connected)
+        {
+            connected = true;
+            connectedTime = millis();
+        }
+        lastPing = millis();
+        Wire.write(10); // Dummy value
+    }
 }
 
 void TWIReceived(int bytes)
@@ -60,6 +79,16 @@ void TWIReceived(int bytes)
             robotData[type] = word(Wire.read(), Wire.read());
 
         mainStatWidget.markDirty();
+    }
+    else if (cmd == TWI_CMD_REQDATA)
+        requestedData = static_cast<EReqData>(Wire.read());
+    else if (cmd == TWI_CMD_LOG)
+    {
+        char buf[CLogWidget::MAX_LOG_CHARS];
+        uint8_t i = 0;
+        while (Wire.available())
+            buf[i++] = Wire.read();
+        logWidget.addLogEntry(buf);
     }
 
     if (Wire.available())
@@ -86,6 +115,60 @@ void TWIReceived(int bytes)
 #endif
 }
 
+void setServoPos(uint8_t pos)
+{
+    servo.write(pos);
+    robotData[SERVOPOS] = pos;
+    mainStatWidget.markDirty();
+}
+
+uint8_t getSharpIRDistance()
+{
+    const uint8_t sharpIRPin = 0;
+    uint16_t adc = analogRead(sharpIRPin);
+
+    // UNDONE: Avoid float calculations?
+
+    // ADC to volt (assuming 5v supply))
+    float volt = (float)adc * 5.0 / 1023.0;
+
+    // From http://www.robotshop.ca/PDF/Sharp_GP2Y0A02YK_Ranger.pdf
+    const float A = 0.008271, B = 939.6, C = -3.398, D = 17.339;
+
+    return (uint8_t)((A + B * volt) / (1.0 + C * volt + D * volt * volt));
+}
+
+void drawStats()
+{
+    // top and bottom bars
+    const uint8_t barh = 10;
+    CGUI::lcd.setRect(LCD_STARTX, LCD_STARTY, LCD_STARTX + LCD_WIDTH,
+                      LCD_STARTY + barh, true, CYAN);
+    CGUI::lcd.setRect(LCD_STARTX, LCD_STARTY + LCD_HEIGHT - barh, LCD_STARTX + LCD_WIDTH,
+                      LCD_STARTY + LCD_HEIGHT, true, CYAN);
+
+    // Battery indicator
+    const uint8_t batw = 18, batx = LCD_STARTX + LCD_WIDTH - batw - 2;
+    const uint8_t baty = LCD_STARTY + 2, bath = 6;
+    const uint16_t batv = (robotData[BATTERY] < 600) ? 600 : robotData[BATTERY];
+    CGUI::lcd.setRect(batx, baty, batx + batw, baty + bath, false, GRAY);
+    CGUI::lcd.setRect(batx, baty, batx + map(batv, 600, 820, 0, batw),
+                      baty + bath, true, GRAY);
+
+    // Run time
+    if (!connected)
+        CGUI::lcd.setStrSmall_P(PSTR("no con"), LCD_STARTX + LCD_WIDTH - 40,
+                              LCD_STARTY + LCD_HEIGHT - FONT_SMALL_HEIGHT - 1, GRAY, CYAN);
+    else
+    {
+        const uint8_t rtime = (millis() - connectedTime) / 1000;
+        char rtimestr[8];
+        itoa(rtime, rtimestr, 10);
+        CGUI::lcd.setStrSmall(rtimestr, LCD_STARTX + LCD_WIDTH - (strlen(rtimestr) * FONT_SMALL_WIDTH) - 2,
+                              LCD_STARTY + LCD_HEIGHT - FONT_SMALL_HEIGHT - 1, GRAY, CYAN);
+    }
+}
+
 void menuCallBack(SMenuItem *item)
 {
     Serial.print("CallBack: ");
@@ -99,11 +182,16 @@ void menuCallBack(SMenuItem *item)
 
     if (item == &mainStatItem)
         GUI.setActiveWidget(&mainStatWidget);
+    else if (item == &logItem)
+        GUI.setActiveWidget(&logWidget);
 }
 
 void widgetCloseCB(CWidget *w)
 {
     GUI.setActiveWidget(&mainMenu);
+}
+
+
 }
 
 void initInterface()
@@ -114,26 +202,54 @@ void initInterface()
         digitalWrite(LCDShieldSwitches[i].pin, HIGH);
     }
 
+    servo.attach(3);
+
     Wire.begin(10 >> 1);
     Wire.onRequest(TWIMasterRequest);
     Wire.onReceive(TWIReceived);
 
     GUI.init();
+    GUI.setDrawStatsCB(drawStats);
     GUI.addWidget(&mainStatWidget);
+    GUI.addWidget(&logWidget);
     GUI.addWidget(&mainMenu);
     GUI.setActiveWidget(&mainMenu);
 
     mainMenu.addItem(&mainStatItem);
-    mainMenu.addItem(&secondItem);
+    mainMenu.addItem(&logItem);
     mainMenu.addItem(&thirdItem);
     mainMenu.setCallback(menuCallBack);
 
     mainStatWidget.setClosedCB(widgetCloseCB);
+    logWidget.setClosedCB(widgetCloseCB);
+
+    logWidget.addLogEntry("Hello!");
+    logWidget.addLogEntry("Stuff");
+    logWidget.addLogEntry("Stuff");
+    logWidget.addLogEntry("Stuff");
+    logWidget.addLogEntry("End!");
+
+    setServoPos(90);
 }
 
 void updateInterface()
 {
     const uint32_t curtime = millis();
+
+    if ((curtime - lastPing) > 1000)
+        connected = false;
+
+    if (curtime > sharpIRUptime)
+    {
+        sharpIRUptime = curtime + 500;
+        robotData[SHARP_IR] = getSharpIRDistance();
+        if (robotData[SHARP_IR] < 20)
+            robotData[SHARP_IR] = 20;
+        else if (robotData[SHARP_IR] > 150)
+            robotData[SHARP_IR] = 150;
+        mainStatWidget.markDirty();
+    }
+
     for (uint8_t i=0; i<3; ++i)
     {
         const uint8_t state = digitalRead(LCDShieldSwitches[i].pin);

@@ -21,13 +21,20 @@ enum
 
 class CGUI
 {
+public:
+    typedef void (*TDrawStatsCB)(void);
+
+private:
     CWidget *firstWidget, *activeWidget;
     uint8_t lastSwState;
+    uint32_t lastStatsDraw;
+    TDrawStatsCB drawStatsCB;
 
 public:
     CGUI(void);
 
     void init(void);
+    void setDrawStatsCB(TDrawStatsCB cb) { drawStatsCB = cb; }
     void addWidget(CWidget *w);
     void setActiveWidget(CWidget *w);
     void run(uint8_t swstate);

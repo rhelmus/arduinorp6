@@ -24,7 +24,7 @@ set(FIRMWARE_NAME arduinorp6)
 
 set(${FIRMWARE_NAME}_BOARD uno)               # Arduino Target board
 # set(${FIRMWARE_NAME}_SKETCHES arduinorp6.ino)
-set(${FIRMWARE_NAME}_SRCS widget.cpp menu.cpp gui.cpp interface.cpp mainstatwidget.cpp arduinorp6.cpp)  # Firmware sources
+set(${FIRMWARE_NAME}_SRCS widget.cpp menu.cpp gui.cpp interface.cpp logwidget.cpp mainstatwidget.cpp arduinorp6.cpp)  # Firmware sources
 set(${FIRMWARE_NAME}_PORT /dev/ttyACM0)            # Serial upload port
 # set(${FIRMWARE_NAME}_LIBS ColorLCDShield)
 
