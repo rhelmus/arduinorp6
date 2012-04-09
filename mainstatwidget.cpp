@@ -10,7 +10,7 @@ uint16_t getDataMax(uint8_t type)
 {
     if ((type == MOTOR_LSPEED) || (type == MOTOR_RSPEED))
         return 210;
-    else if (type == SHARP_IR)
+    else if (type == SHARPIR)
         return 150;
     else if (type == SERVOPOS)
         return 180;
@@ -31,7 +31,7 @@ CMainStatWidget::CMainStatWidget() : fullUpdate(true)
     dataLabels[MOTOR_RCURRENT] = PSTR("R cur");
     dataLabels[LIGHT_L] = PSTR("Light L");
     dataLabels[LIGHT_R] = PSTR("Light R");
-    dataLabels[SHARP_IR] = PSTR("Shrp IR");
+    dataLabels[SHARPIR] = PSTR("Shrp IR");
     dataLabels[SERVOPOS] = PSTR("Servo");
 }
 

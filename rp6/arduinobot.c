@@ -16,11 +16,17 @@ typedef struct
 
 SACSCollisionState ACSCollisionState;
 ENavState navState;
+uint8_t sharpIRDistance;
 
 void TWIDataReqHandler(uint8_t id)
 {
     if (id == REQ_PING)
         ; // Nothing
+    else if (id == REQ_SHARPIR)
+    {
+        I2CTWI_getReceivedData(&sharpIRDistance, 1);
+        writeString_P("Received Sharp IR: "); writeInteger(sharpIRDistance, DEC); writeChar('\n');
+    }
 }
 
 void TWIErrorHandler(uint8_t errorState)
@@ -116,6 +122,16 @@ void updateACSState(void)
     }
 
     updateStatusLEDs();
+}
+
+void updateSharpIR(void)
+{
+    if (getStopwatch6() > 45)
+    {
+        I2CTWI_transmit2Bytes(I2CSlaveAddress, TWI_CMD_REQDATA, REQ_SHARPIR);
+        I2CTWI_requestDataFromDevice(I2CSlaveAddress, REQ_SHARPIR, 1);
+        setStopwatch6(0);
+    }
 }
 
 void updateACSPower(void)
@@ -275,6 +291,7 @@ int main(void)
     // Stopwatch3: continueous left ACS collision time
     // Stopwatch4: continueous right ACS collision time
     // Stopwatch5: drive with altered speed (e.g. to avoid collisions)
+    startStopwatch6(); // update Sharp IR
 
     TWILog("RP6 init");
     
@@ -282,6 +299,7 @@ int main(void)
     {
         updateTWI();
         updateACSState();
+        updateSharpIR();
         navigate();
         task_I2CTWI();
         task_RP6System();

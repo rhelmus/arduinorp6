@@ -5,7 +5,8 @@ enum
 {
     TWI_CMD_SETDATA = 0,
     TWI_CMD_REQDATA,
-    TWI_CMD_LOG
+    TWI_CMD_LOG,
+    TWI_CMD_SETSERVO
 };
 
 enum
@@ -17,7 +18,7 @@ enum
     MOTOR_RCURRENT,
     LIGHT_L,
     LIGHT_R,
-    SHARP_IR,
+    SHARPIR,
     SERVOPOS,
 
     DATA_END
@@ -26,7 +27,8 @@ enum
 enum EReqData
 {
     REQ_NONE = 0,
-    REQ_PING
+    REQ_PING,
+    REQ_SHARPIR
 };
 
 #endif // SHARED_H

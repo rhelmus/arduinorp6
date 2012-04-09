@@ -41,80 +41,6 @@ struct SButton
 } LCDShieldSwitches[3] = { { 3, HIGH, HIGH, 0 }, { 4, HIGH, HIGH, 0 }, { 5, HIGH, HIGH, 0 } };
 
 
-extern int __bss_end;
-extern void *__brkval;
-int memFree()
-{
-    int fv;
-    if ((int)__brkval == 0)
-        return ((int)&fv) - ((int)&__bss_end);
-    return ((int)&fv) - ((int)&__brkval);
-}
-
-void TWIMasterRequest(void)
-{
-    if (requestedData == REQ_PING)
-    {
-        if (!connected)
-        {
-            connected = true;
-            connectedTime = millis();
-        }
-        lastPing = millis();
-        Wire.write(10); // Dummy value
-    }
-}
-
-void TWIReceived(int bytes)
-{
-    const uint8_t cmd = Wire.read();
-
-    if (cmd == TWI_CMD_SETDATA)
-    {
-        const uint8_t type = Wire.read();
-
-        if ((type == MOTOR_LSPEED) || (type == MOTOR_RSPEED))
-            robotData[type] = Wire.read();
-        else
-            robotData[type] = word(Wire.read(), Wire.read());
-
-        mainStatWidget.markDirty();
-    }
-    else if (cmd == TWI_CMD_REQDATA)
-        requestedData = static_cast<EReqData>(Wire.read());
-    else if (cmd == TWI_CMD_LOG)
-    {
-        char buf[CLogWidget::MAX_LOG_CHARS];
-        uint8_t i = 0;
-        while (Wire.available())
-            buf[i++] = Wire.read();
-        logWidget.addLogEntry(buf);
-    }
-
-    if (Wire.available())
-    {
-        Wire.read();
-//        Serial.print(F("Extra bytes left: "));
-//        while (Wire.available())
-//        {
-//            Serial.print((char)Wire.read());
-//            Serial.print(", ");
-//        }
-//        Serial.println();
-    }
-
-#if 0
-    Serial.print("Data: ");
-    while (bytes)
-    {
-        Serial.print((char)Wire.read());
-        Serial.print(", ");
-        --bytes;
-    }
-    Serial.println("");
-#endif
-}
-
 void setServoPos(uint8_t pos)
 {
     servo.write(pos);
@@ -169,10 +95,77 @@ void drawStats()
     }
 }
 
+void TWIMasterRequest(void)
+{
+    if (requestedData == REQ_PING)
+    {
+        if (!connected)
+        {
+            connected = true;
+            connectedTime = millis();
+        }
+        lastPing = millis();
+        Wire.write(10); // Dummy value
+    }
+    else if (requestedData == REQ_SHARPIR)
+        Wire.write(getSharpIRDistance());
+}
+
+void TWIReceived(int bytes)
+{
+    const uint8_t cmd = Wire.read();
+
+    if (cmd == TWI_CMD_SETDATA)
+    {
+        const uint8_t type = Wire.read();
+
+        if ((type == MOTOR_LSPEED) || (type == MOTOR_RSPEED))
+            robotData[type] = Wire.read();
+        else
+            robotData[type] = word(Wire.read(), Wire.read());
+
+        mainStatWidget.markDirty();
+    }
+    else if (cmd == TWI_CMD_REQDATA)
+        requestedData = static_cast<EReqData>(Wire.read());
+    else if (cmd == TWI_CMD_LOG)
+    {
+        char buf[CLogWidget::MAX_LOG_CHARS];
+        uint8_t i = 0;
+        while (Wire.available())
+            buf[i++] = Wire.read();
+        logWidget.addLogEntry(buf);
+    }
+    else if (cmd == TWI_CMD_SETSERVO)
+        setServoPos(Wire.read());
+
+    if (Wire.available())
+    {
+        while (Wire.available())
+            Wire.read();
+//        Serial.print(F("Extra bytes left: "));
+//        while (Wire.available())
+//        {
+//            Serial.print((char)Wire.read());
+//            Serial.print(", ");
+//        }
+//        Serial.println();
+    }
+
+#if 0
+    Serial.print("Data: ");
+    while (bytes)
+    {
+        Serial.print((char)Wire.read());
+        Serial.print(", ");
+        --bytes;
+    }
+    Serial.println("");
+#endif
+}
+
 void menuCallBack(SMenuItem *item)
 {
-    Serial.print("CallBack: ");
-
     char c;
     const char *str = item->text;
     while ((c = pgm_read_byte(str++)))
@@ -242,11 +235,11 @@ void updateInterface()
     if (curtime > sharpIRUptime)
     {
         sharpIRUptime = curtime + 500;
-        robotData[SHARP_IR] = getSharpIRDistance();
-        if (robotData[SHARP_IR] < 20)
-            robotData[SHARP_IR] = 20;
-        else if (robotData[SHARP_IR] > 150)
-            robotData[SHARP_IR] = 150;
+        robotData[SHARPIR] = getSharpIRDistance();
+        if (robotData[SHARPIR] < 20)
+            robotData[SHARPIR] = 20;
+        else if (robotData[SHARPIR] > 150)
+            robotData[SHARPIR] = 150;
         mainStatWidget.markDirty();
     }
 
