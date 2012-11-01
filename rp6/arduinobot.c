@@ -1,21 +1,15 @@
 #include "../shared/shared.h"
+#include "arduinobot.h"
+#include "collisiontask.h"
+#include "drivetask.h"
+#include "rotatetask.h"
+#include "scantask.h"
 
 #include "RP6RobotBaseLib.h"
 #include "RP6I2CmasterTWI.h"
 
 const uint8_t I2CSlaveAddress = 10;
-
-typedef enum { ACS_LOW=0, ACS_MED, ACS_HIGH } EPowerState;
-typedef enum { NAV_CRUISE, NAV_TURN, NAV_FULLSTOP } ENavState;
-
-typedef struct
-{
-    uint8_t left:1, right:1;
-    EPowerState powerState:2;
-} SACSCollisionState;
-
-SACSCollisionState ACSCollisionState;
-ENavState navState;
+ETask currentTask;
 uint8_t sharpIRDistance;
 
 void TWIDataReqHandler(uint8_t id)
@@ -58,7 +52,7 @@ void TWILog_P(const char *txt)
 
 void setServoPos(uint8_t pos)
 {
-    I2CTWI_transmit3Bytes(I2CSlaveAddress, TWI_CMD_SETSERVO, pos);
+    I2CTWI_transmit2Bytes(I2CSlaveAddress, TWI_CMD_SETSERVO, pos);
 }
 
 void updateTWI(void)
@@ -100,9 +94,6 @@ void updateTWI(void)
 
 void updateACSState(void)
 {
-    ACSCollisionState.left = obstacle_left;
-    ACSCollisionState.right = obstacle_right;
-
     if (obstacle_left && !isStopwatch3Running())
         startStopwatch3();
     else if (!obstacle_left && isStopwatch3Running())
@@ -120,22 +111,8 @@ void updateACSState(void)
     }
 
     statusLEDs.byte = 0;
-
-    switch (ACSCollisionState.powerState)
-    {
-    case ACS_LOW:
-        statusLEDs.LED3 = obstacle_right;
-        statusLEDs.LED6 = obstacle_left;
-        break;
-    case ACS_MED:
-        statusLEDs.LED2 = obstacle_right;
-        statusLEDs.LED5 = obstacle_left;
-        break;
-    case ACS_HIGH:
-        statusLEDs.LED1 = obstacle_right;
-        statusLEDs.LED4 = obstacle_left;
-        break;
-    }
+    statusLEDs.LED3 = obstacle_right;
+    statusLEDs.LED6 = obstacle_left;
 
     updateStatusLEDs();
 }
@@ -150,141 +127,26 @@ void updateSharpIR(void)
     }
 }
 
-void updateACSPower(void)
+void setTask(ETask task)
 {
-    ACSCollisionState.left = false;
-    ACSCollisionState.right = false;
-    stopStopwatch3();
-    setStopwatch3(0);
-    stopStopwatch4();
-    setStopwatch4(0);
-
-    switch (ACSCollisionState.powerState)
+    currentTask = task;
+    switch (task)
     {
-        case ACS_LOW: setACSPwrLow(); break;
-        case ACS_MED: setACSPwrMed(); break;
-        case ACS_HIGH: setACSPwrHigh(); break;
+    case TASK_DRIVE: initDriveTask(); break;
+    case TASK_COLLISION: initCollisionTask(); break;
+    case TASK_SCAN: initScanTask(); break;
+    case TASK_ROTATE: initRotateTask(); break;
     }
 }
 
-void setNavState(ENavState state)
+void doTask()
 {
-    navState = state;
-    switch (state)
+    switch (currentTask)
     {
-        case NAV_CRUISE: changeDirection(FWD); moveAtSpeed(80, 80); break;
-        case NAV_TURN: break; // Set somewhere else
-        case NAV_FULLSTOP: stop(); break;
-    }
-}
-
-uint8_t leftCollision(void)
-{
-    return (ACSCollisionState.left && isStopwatch3Running() &&
-            getStopwatch3() >= 50);
-}
-
-uint8_t rightCollision(void)
-{
-    return (ACSCollisionState.right && isStopwatch4Running() &&
-            getStopwatch4() >= 50);
-}
-
-void navigate(void)
-{
-    if (navState == NAV_CRUISE)
-    {
-        // Check bumpers
-        if (bumper_left || bumper_right)
-        {
-            TWILog_P(PSTR("Bumper hit"));
-
-            move(70, BWD, DIST_MM(100), true); // Move away
-
-            if (bumper_left && bumper_right)
-                rotate(60, RIGHT, 180, false);
-            else if (bumper_left)
-                rotate(60, RIGHT, 60, false);
-            else // right
-                rotate(60, LEFT, 60, false);
-
-            setNavState(NAV_TURN);
-            return;
-        }
-
-        // Check ACS
-        const uint8_t cleft = leftCollision();
-        const uint8_t cright = rightCollision();
-
-        if (cleft || cright)
-        {
-            TWILog_P(PSTR("ACS hit"));
-
-            if (ACSCollisionState.powerState == ACS_LOW)
-            {
-                move(70, BWD, DIST_MM(60), true); // Move away
-
-                if (cleft && cright)
-                    rotate(60, RIGHT, 180, false); // UNDONE: randomize
-                else if (cleft)
-                    rotate(60, RIGHT, 60, false);
-                else // right
-                    rotate(60, LEFT, 60, false);
-
-                setNavState(NAV_TURN);
-            }
-            else
-            {
-                uint8_t left = 80, right = 80;
-
-                if (cleft && cright)
-                {
-                    if (ACSCollisionState.powerState == ACS_MED)
-                        left = right = 60; // UNDONE
-                }
-                else if (cleft)
-                {
-                    left = 100;
-                    if (ACSCollisionState.powerState == ACS_MED)
-                        right = 0;
-                    else
-                        right = 50;
-                }
-                else // right
-                {
-                    right = 100;
-                    if (ACSCollisionState.powerState == ACS_MED)
-                        left = 0;
-                    else
-                        left = 50;
-                }
-
-                if (!isStopwatch5Running())
-                    startStopwatch5();
-
-                setStopwatch5(0); // Update
-
-                moveAtSpeed(left, right);
-            }
-        }
-        else
-        {
-            if (isStopwatch5Running() && (getStopwatch5() > 1000))
-            {
-                // Didn't update stopwatch for a while,
-                // revert to normal speed
-                moveAtSpeed(80, 80);
-                stopStopwatch5();
-                setStopwatch5(0);
-            }
-        }
-    }
-    else if (navState == NAV_TURN)
-    {
-        if (bumper_left || bumper_right)
-            setNavState(NAV_FULLSTOP); // Emergency stop
-        else if (isMovementComplete())
-            setNavState(NAV_CRUISE);
+    case TASK_DRIVE: doDriveTask(); break;
+    case TASK_COLLISION: doCollisionTask(); break;
+    case TASK_SCAN: doScanTask(); break;
+    case TASK_ROTATE: doRotateTask(); break;
     }
 }
 
@@ -301,10 +163,9 @@ int main(void)
     setLEDs(0b000000);
     
     powerON();
+    setACSPwrMed();
 
-    ACSCollisionState.powerState = ACS_LOW;
-    updateACSPower();
-//    setNavState(NAV_CRUISE);
+    setTask(TASK_DRIVE);
     
     startStopwatch1(); // TWI status update
     startStopwatch2(); // TWI ping
@@ -312,6 +173,7 @@ int main(void)
     // Stopwatch4: continueous right ACS collision time
     // Stopwatch5: drive with altered speed (e.g. to avoid collisions)
     startStopwatch6(); // update Sharp IR
+    // Stopwatch7: used by scan task
 
     TWILog_P(PSTR("RP6 init"));
     
@@ -320,7 +182,7 @@ int main(void)
         updateTWI();
         updateACSState();
         updateSharpIR();
-        navigate();
+        doTask();
         task_I2CTWI();
         task_RP6System();
     }

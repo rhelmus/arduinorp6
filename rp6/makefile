@@ -51,6 +51,8 @@ RP6_LIB_PATH_OTHERS= $(RP6_LIB_PATH)/RP6base $(RP6_LIB_PATH)/RP6common
 SRC = $(TARGET).c
 # DO NOT EDIT THIS!
 
+# Additional files
+SRC += drivetask.c collisiontask.c rotatetask.c scantask.c
 
 ###############################################################################
 # If there is more than one source file, append them here separated by spaces.
