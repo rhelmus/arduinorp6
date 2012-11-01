@@ -40,7 +40,7 @@ TARGET = arduinobot
 # Specify relative path to RP6 library files here.
 # This is "../../RP6Lib" or "../RP6Lib" usually.
 
-RP6_LIB_PATH=../../../../rp6/RP6Examples_20080510/RP6Lib
+RP6_LIB_PATH=../../../../rp6lib/RP6Lib/
 RP6_LIB_PATH_OTHERS= $(RP6_LIB_PATH)/RP6base $(RP6_LIB_PATH)/RP6common
 
 ###############################################################################
@@ -190,7 +190,9 @@ CINCS =
 CFLAGS = -g$(DEBUG)
 CFLAGS += $(CDEFS) $(CINCS)
 CFLAGS += -O$(OPT)
-CFLAGS += -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
+CFLAGS += 	-funsigned-char \
+			-funsigned-bitfields \
+			-fpack-struct -fshort-enums
 CFLAGS += -Wall -Wstrict-prototypes
 CFLAGS += -Wa,-adhlns=$(<:.c=.lst)
 CFLAGS += $(patsubst %,-I%,$(EXTRAINCDIRS))
@@ -416,7 +418,7 @@ end:
 
 # Display size of file.
 HEXSIZE = $(SIZE) --target=$(FORMAT) $(TARGET).hex
-ELFSIZE = $(SIZE) $(TARGET).elf
+ELFSIZE = $(SIZE) --format=avr --mcu=$(MCU) $(TARGET).elf
 
 sizebefore:
 	@if test -f $(TARGET).elf; then echo; echo $(MSG_SIZE_BEFORE); $(ELFSIZE); \

@@ -74,6 +74,7 @@ void drawStats()
                       LCD_STARTY + LCD_HEIGHT, true, CYAN);
 
     // Battery indicator
+    Serial.print("bat: "); Serial.println(robotData[BATTERY], DEC);
     const uint8_t batw = 18, batx = LCD_STARTX + LCD_WIDTH - batw - 2;
     const uint8_t baty = LCD_STARTY + 2, bath = 6;
     const uint16_t batv = (robotData[BATTERY] < 600) ? 600 : robotData[BATTERY];
@@ -122,7 +123,7 @@ void TWIReceived(int bytes)
         if ((type == MOTOR_LSPEED) || (type == MOTOR_RSPEED))
             robotData[type] = Wire.read();
         else
-            robotData[type] = word(Wire.read(), Wire.read());
+            robotData[type] = Wire.read() << 8 | Wire.read();
 
         mainStatWidget.markDirty();
     }
@@ -195,7 +196,7 @@ void initInterface()
         digitalWrite(LCDShieldSwitches[i].pin, HIGH);
     }
 
-    servo.attach(3);
+    servo.attach(6);
 
     Wire.begin(10 >> 1);
     Wire.onRequest(TWIMasterRequest);

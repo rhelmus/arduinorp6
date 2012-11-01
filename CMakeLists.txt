@@ -1,36 +1,18 @@
-#=============================================================================#
-# Author: QueezyTheGreat                                                      #
-# Date:   26.04.2011                                                          #
-#                                                                             #
-# Description: Arduino CMake example                                          #
-#                                                                             #
-#=============================================================================#
-
-set(CMAKE_MODULE_PATH    ${CMAKE_SOURCE_DIR}/../../arduino-cmake/cmake/modules)  # CMake module search path
-set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/../../arduino-cmake/cmake/toolchains/Arduino.cmake) # Arduino Toolchain
-set(ARDUINO_SDK_VERSION 1.0)
-
 cmake_minimum_required(VERSION 2.8)
-#====================================================================#
-#  Setup Project                                                     #
-#====================================================================#
-project(ArduinoExample C CXX)
-find_package(Arduino 1.0 REQUIRED)
 
-#====================================================================#
-#  Settings                                                          #
-#====================================================================#
-set(FIRMWARE_NAME arduinorp6)
+set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/../../arduino-cmake/cmake/ArduinoToolchain.cmake)
 
-set(${FIRMWARE_NAME}_BOARD uno)               # Arduino Target board
-# set(${FIRMWARE_NAME}_SKETCHES arduinorp6.ino)
-set(${FIRMWARE_NAME}_SRCS widget.cpp menu.cpp gui.cpp interface.cpp logwidget.cpp mainstatwidget.cpp arduinorp6.cpp)  # Firmware sources
-set(${FIRMWARE_NAME}_PORT /dev/ttyACM0)            # Serial upload port
-# set(${FIRMWARE_NAME}_LIBS ColorLCDShield)
+project(arduinorp6 C CXX)
+
+# This configuration file outlines some of the ways Arduino CMake
+# can be used. For a detailed explenation of all the options please
+# reade README.rst.
+
+set(ARDUINO_DEFAULT_BOARD uno) # Default Board ID, when not specified
+set(ARDUINO_DEFAULT_PORT /dev/ttyACM0) # Default Port, when not specified
 
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../libraries)
 
-#====================================================================#
-#  Target generation                                                 #
-#====================================================================#
-generate_arduino_firmware(${FIRMWARE_NAME})
+generate_arduino_firmware(arduinorp6
+    SRCS widget.cpp menu.cpp gui.cpp interface.cpp logwidget.cpp mainstatwidget.cpp arduinorp6.cpp)
+

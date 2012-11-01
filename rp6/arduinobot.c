@@ -38,11 +38,27 @@ void TWIErrorHandler(uint8_t errorState)
 
 void TWILog(const char *txt)
 {
-    const uint8_t maxLogChars = 15;
-    static char msgbuf[maxLogChars + 1];
+#define MAX_LOG_CHARS 15
+    static char msgbuf[MAX_LOG_CHARS + 1];
     msgbuf[0] = TWI_CMD_LOG;
-    strncpy(&msgbuf[1], txt, maxLogChars);
-    I2CTWI_transmitBytes(I2CSlaveAddress, msgbuf, maxLogChars + 1);
+    strncpy(&msgbuf[1], txt, MAX_LOG_CHARS);
+    I2CTWI_transmitBytes(I2CSlaveAddress, msgbuf, MAX_LOG_CHARS + 1);
+#undef MAX_LOG_CHARS
+}
+
+void TWILog_P(const char *txt)
+{
+#define MAX_LOG_CHARS 15
+    static char msgbuf[MAX_LOG_CHARS + 1];
+    msgbuf[0] = TWI_CMD_LOG;
+    strncpy_P(&msgbuf[1], txt, MAX_LOG_CHARS);
+    I2CTWI_transmitBytes(I2CSlaveAddress, msgbuf, MAX_LOG_CHARS + 1);
+#undef MAX_LOG_CHARS
+}
+
+void setServoPos(uint8_t pos)
+{
+    I2CTWI_transmit3Bytes(I2CSlaveAddress, TWI_CMD_SETSERVO, pos);
 }
 
 void updateTWI(void)
@@ -181,6 +197,8 @@ void navigate(void)
         // Check bumpers
         if (bumper_left || bumper_right)
         {
+            TWILog_P(PSTR("Bumper hit"));
+
             move(70, BWD, DIST_MM(100), true); // Move away
 
             if (bumper_left && bumper_right)
@@ -200,6 +218,8 @@ void navigate(void)
 
         if (cleft || cright)
         {
+            TWILog_P(PSTR("ACS hit"));
+
             if (ACSCollisionState.powerState == ACS_LOW)
             {
                 move(70, BWD, DIST_MM(60), true); // Move away
@@ -284,7 +304,7 @@ int main(void)
 
     ACSCollisionState.powerState = ACS_LOW;
     updateACSPower();
-    setNavState(NAV_CRUISE);
+//    setNavState(NAV_CRUISE);
     
     startStopwatch1(); // TWI status update
     startStopwatch2(); // TWI ping
@@ -293,7 +313,7 @@ int main(void)
     // Stopwatch5: drive with altered speed (e.g. to avoid collisions)
     startStopwatch6(); // update Sharp IR
 
-    TWILog("RP6 init");
+    TWILog_P(PSTR("RP6 init"));
     
     while(true)  
     {
