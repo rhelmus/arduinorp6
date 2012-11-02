@@ -19,7 +19,8 @@ void doRotateTask()
         setTask(TASK_DRIVE);
     else
     {
-        // UNDONE: check bumpers
+        if (bumper_left || bumper_right)
+            setTask(TASK_COLLISION);
     }
 }
 

@@ -8,8 +8,8 @@
 #include "RP6RobotBaseLib.h"
 #include "RP6I2CmasterTWI.h"
 
-const uint8_t I2CSlaveAddress = 10;
-ETask currentTask;
+static const uint8_t I2CSlaveAddress = 10;
+static ETask currentTask;
 uint8_t sharpIRDistance;
 
 void TWIDataReqHandler(uint8_t id)
@@ -20,6 +20,8 @@ void TWIDataReqHandler(uint8_t id)
     {
         I2CTWI_getReceivedData(&sharpIRDistance, 1);
         writeString_P("Received Sharp IR: "); writeInteger(sharpIRDistance, DEC); writeChar('\n');
+        statusLEDs.LED1 = statusLEDs.LED4 = (sharpIRDistance < 40);
+        updateStatusLEDs();
     }
 }
 
@@ -110,9 +112,8 @@ void updateACSState(void)
         setStopwatch4(0);
     }
 
-    statusLEDs.byte = 0;
-    statusLEDs.LED3 = obstacle_right;
-    statusLEDs.LED6 = obstacle_left;
+    statusLEDs.LED2 = obstacle_right;
+    statusLEDs.LED5 = obstacle_left;
 
     updateStatusLEDs();
 }
@@ -139,7 +140,7 @@ void setTask(ETask task)
     }
 }
 
-void doTask()
+void doTask(void)
 {
     switch (currentTask)
     {
@@ -163,7 +164,9 @@ int main(void)
     setLEDs(0b000000);
     
     powerON();
-    setACSPwrMed();
+    setACSPwrLow();
+
+    srand(readADC(ADC_LS_L) + readADC(ADC_LS_R)); // Should be fairly random
 
     setTask(TASK_DRIVE);
     
@@ -171,12 +174,14 @@ int main(void)
     startStopwatch2(); // TWI ping
     // Stopwatch3: continueous left ACS collision time
     // Stopwatch4: continueous right ACS collision time
-    // Stopwatch5: drive with altered speed (e.g. to avoid collisions)
+    // Stopwatch5: used by drive task
     startStopwatch6(); // update Sharp IR
     // Stopwatch7: used by scan task
 
+    setServoPos(90);
+
     TWILog_P(PSTR("RP6 init"));
-    
+
     while(true)  
     {
         updateTWI();
